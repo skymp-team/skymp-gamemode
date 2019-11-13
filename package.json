@@ -1,0 +1,26 @@
+{
+  "name": "skymp-gamemode",
+  "version": "1.0.0",
+  "description": "**skymp-gamemode**",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon -e * -x \"node .\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Pospelove/skymp-gamemode.git"
+  },
+  "author": "Pospelov",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Pospelove/skymp-gamemode/issues"
+  },
+  "homepage": "https://github.com/Pospelove/skymp-gamemode#readme",
+  "devDependencies": {
+    "nodemon": "^1.19.1"
+  },
+  "dependencies": {
+    "readdir-recursive": "0.0.4",
+    "recursive-readdir": "^2.2.2"
+  }
+}
