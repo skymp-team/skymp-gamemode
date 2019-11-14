@@ -14,15 +14,16 @@ function createRequestSource(options) {
     throw new TypeError('options.receive(id) must be function');
   }
   return (requestOptions) => {
-    let { target, body, route, timeout } = requestOptions;
+    let { target, body, route, timeout, type } = requestOptions;
     if (!body) body = {};
     if (!timeout) timeout = 15000;
+    if (!type) type = 'post';
 
     let idSuffix = idGenerator.generate();
     let id = idPrefix + idSuffix;
 
     let runRequest = async () => {
-      await options.send(target, { id, body, route });
+      await options.send(target, { id, body, route, type });
 
       let startMoment = Date.now();
       let timeRemaining = Math.max(0, startMoment + timeout - Date.now());
@@ -53,16 +54,19 @@ function createRequestListener(options) {
   let listener = async (asyncHandler) => {
     while (1) {
       let { from, customPacket } = await options.receive();
-      let { id, body, route } = customPacket;
+      let { id, body, route, type } = customPacket;
       let responseCustomPacket = { id };
-      let ctx = { from, body, route };
+      let setError = str => responseCustomPacket.error = str;
+      let setResult = any => responseCustomPacket.body = any;
+      let ctx = { from, body, route, type, setError, setResult };
       asyncHandler(ctx)
-      .then((body) => {
-        responseCustomPacket.body = body;
+      .then(() => {
         options.send(from, responseCustomPacket);
       })
       .catch((e) => {
-        responseCustomPacket.error = e.toString();
+        console.error(`Error in ${route}`, e);
+        responseCustomPacket.body = undefined;
+        responseCustomPacket.error = 'Internal server error';
         options.send(from, responseCustomPacket);
       });
     }
@@ -72,9 +76,11 @@ function createRequestListener(options) {
 
 let g;
 try {
-  g = global;
+  g = module.exports;
 }
 catch(e) {
-  g = window;
+  window.skympRequest = {};
+  g = window.skympRequest;
 }
-g.skympRequest = { createRequestListener, createRequestSource };
+g.createRequestListener = createRequestListener;
+g.createRequestSource = createRequestSource;

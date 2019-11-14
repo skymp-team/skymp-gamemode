@@ -1,84 +1,57 @@
 let fs = require('fs');
-let recursive = require("recursive-readdir");
-let { RemoteServer } = require('C:/projects/skymp-build/pack/skymp-api.node');
+let commander = require('commander');
+let LocalStorage = require('node-localstorage').LocalStorage;
+let createServer = require('./src/createServer');
+let getFrontEnd = require('./src/getFrontEnd');
+let Router = require('./src/router');
+let skympRequest = require('./front/lib/skympRequester');
 
-let svr = new RemoteServer();
+commander
+  .option('-m, --master [url]', 'SkyMP master server URL', 'http://185.211.246.144:3000')
+  .option('-p, --maxPlayers [n]', 'Players online limitation', '5')
+  .version(require('./package.json').version);
+commander.parse(process.argv);
 
-let frontDir = 'front';
-recursive(frontDir, function (err, files) {
-  if (err) {
-    return console.error(err);
+let localStorage = new LocalStorage('./local_storage');
+
+async function main() {
+  let frontEnd = await getFrontEnd('front');
+  let svrOptions = { maxPlayers: parseInt(commander.maxPlayers) };
+  if (localStorage.getItem('serverId')) {
+    svrOptions.serverId = localStorage.getItem('serverId');
+  }
+  if (localStorage.getItem('devPassword')) {
+    svrOptions.devPassword = localStorage.getItem('devPassword');
   }
 
-  let frontEnd = {};
+  let svr = await createServer(commander.master, svrOptions, frontEnd, localStorage);
 
-  files.forEach(f => {
-    let key = f.substr(frontDir.length + 1);
-    frontEnd[key] = fs.readFileSync(f);
-  });
-  console.log({frontEnd})
-
-  svr.connect({
-    serverId: 'local_win32_test_server',
-    devPassword: 'qwerty',
-    ip: '127.0.0.1',
-    port: 7000,
-    frontEnd
-  });
-});
-
-require('./front/lib/skympRequester');
-let listen = global.skympRequest.createRequestListener({
-  send: (target, customPacket) => {
-    target.sendCustomPacket(customPacket);
-  },
-  receive: () => {
-    return new Promise(resolve => {
-      svr.once('userCustomPacket', (user, packet) => {
-        resolve({ from: user, customPacket: packet });
-      });
-    });
-  }
-});
-
-listen(async ctx => {
-  if (ctx.route === 'login') {
-    let ac = await svr.findActor({ 'storage.password': ctx.body.pass, 'storage.name': ctx.body.name });
-    if (!ac) {
-      throw new Error('Not found');
+  let state = { customPackets: [] };
+  svr.on('userCustomPacket', (from, customPacket) => state.customPackets.push({ from, customPacket }));
+  let listen = skympRequest.createRequestListener({
+    send: (target, customPacket) => {
+      target.sendCustomPacket(customPacket);
+    },
+    receive: async () => {
+      while (1) {
+        await new Promise(r => setImmediate(r));
+        if (state.customPackets.length) {
+          return state.customPackets.shift();
+        }
+      }
     }
-    await ctx.from.setActor(ac);
-    await ac.setEnabled(true).setName(ctx.body.name);
-  }
-
-  if (ctx.route === 'register') {
-    let ac = await svr.createActor()
-      .setPos(-94445.5938, 60036.1406, -12741.3779)
-      .setAngle(0, 0, 0)
-      .setCellOrWorld(0x3c)
-      .setEnabled(true)
-      .setStorage({ password: ctx.body.pass, name: ctx.body.name })
-      .setName(ctx.body.name)
-      .setRaceMenuOpen()
-
-    await ctx.from.setActor(ac);
-  }
-});
-
-svr.on('connect', (err) => {
-  if (err) {
-    return console.error('RemoteServer failed to connect:', err);
-  }
-  console.log('Connected to the RemoteServer');
-});
+  });
+  let router = new Router(listen);
 
 
-svr.on('userEnter', async (user) => {
-});
+  let systemsDir = './src/systems';
+  fs.readdirSync(systemsDir).forEach(f => require(systemsDir + '/' + f)(svr, router));
+};
 
-svr.on('userExit', async (user) => {
-  let ac = await user.getActor();
-  if (ac) {
-    await ac.setEnabled(false);
+main().catch(e => {
+  console.error('Unhandled exception in main():');
+  console.error(e);
+  if (typeof e !== 'string') {
+    console.error(e.toString());
   }
 });

@@ -33,7 +33,7 @@ setTimeout(() => {
     let name = document.getElementById('id_name').value;
     let pass = document.getElementById('id_pass').value;
     request({
-      route: 'login',
+      route: 'auth/login',
       body: { name, pass }
     }).then(() => {
       console.log('logged in successfully');
@@ -45,13 +45,26 @@ setTimeout(() => {
     let name = document.getElementById('id_name').value;
     let pass = document.getElementById('id_pass').value;
     request({
-      route: 'login',
+      route: 'auth/register',
       body: { name, pass }
     }).then(() => {
       console.log('registered successfully');
       hideAuth();
     }).catch(e => alert(e));
   };
+
+  (async () => {
+    while (1) {
+      let v;
+      try {
+        v = await request({ route: 'auth/actor', type: 'get' });
+      }
+      catch(e) {
+        v = e.toString();
+      }
+      document.getElementById('id_myactor').innerHTML = v;
+    }
+  })();
 
 }, 200);
 

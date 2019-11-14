@@ -86,3 +86,9 @@ typings/
 
 # DynamoDB Local files
 .dynamodb/
+
+# Native modules
+*.node
+
+# The local storage for skymp-gamemode
+local_storage/
