@@ -1,16 +1,17 @@
 let fs = require('fs');
+let path = require('path');
+let axios = require('axios');
 
 async function createServer(masterUrl, serverOptions, frontEnd, localStorage) {
   let skympApi;
-  let paths = ['C:/projects/skymp-build/pack/skymp-api.node', 'skymp-api.node'];
+  let paths = ['/usr/lib/skymp-api.node', 'C:\\Program Files (x86)\\Steam\\steamapps\\common\\Skyrim\\skymp-api.node', 'skymp-api.node'];
   paths.forEach(p => {
-    if (!skympApi && fs.existsSync(p)) {
+    if (!skympApi && (fs.existsSync(p) || fs.existsSync(path.join('node_modules', p)))) {
       skympApi = require(p);
     }
   });
   let { RemoteServer } = skympApi;
 
-  let axios = require('axios');
   let master = axios.create({ baseURL: masterUrl, timeout: 5000 });
 
   let { serverId, devPassword, ip, gamemodesPort } = (await master.post('/servers', serverOptions)).data;

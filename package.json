@@ -4,7 +4,9 @@
   "description": "**skymp-gamemode**",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon -e * --ignore local_storage -x \"node . --master http://localhost:3000/\""
+    "start": "node .",
+    "dev_local": "nodemon -e * --ignore local_storage -x \"node . --master http://localhost:3000/\"",
+    "dev": "nodemon -e * --ignore local_storage -x \"node .\""
   },
   "repository": {
     "type": "git",
