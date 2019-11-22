@@ -21,7 +21,10 @@ async function createServer(masterUrl, serverOptions, frontEnd, localStorage) {
   let svr = new RemoteServer;
 
   await new Promise((resolve, reject) => {
-    svr.connect({ serverId, devPassword, ip, port: gamemodesPort, frontEnd });
+    let options = { serverId, devPassword, ip, port: gamemodesPort, frontEnd };
+    svr.connect(options);
+    options.devPassword = '******';
+    console.log('Connecting to', options);
     svr.on('connect', err => {
       err ? reject(err) : resolve();
     });
