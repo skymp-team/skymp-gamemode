@@ -1,6 +1,16 @@
 let fs = require('fs');
 let path = require('path');
+let http = require('http');
 let axios = require('axios');
+
+function getMyPublicIp() {
+  let options = { host: 'ipv4bot.whatismyipaddress.com', port: 80, path: '/' };
+  return new Promise((resolve, reject) => {
+    http.get(options, (res) => {
+      res.on('data', (buf) => { resolve(buf.toString('ascii')); });
+    }).on('error', reject);
+  });
+};
 
 async function createServer(masterUrl, serverOptions, frontEnd, localStorage) {
   let skympApi;
@@ -20,8 +30,14 @@ async function createServer(masterUrl, serverOptions, frontEnd, localStorage) {
 
   let svr = new RemoteServer;
 
+  let myIp = await getMyPublicIp();
   await new Promise((resolve, reject) => {
     let options = { serverId, devPassword, ip, port: gamemodesPort, frontEnd };
+
+    if (myIp === options.ip) {
+      options.ip = '127.0.0.1';
+    }
+
     svr.connect(options);
     options.devPassword = '******';
     console.log('Connecting to', options);
