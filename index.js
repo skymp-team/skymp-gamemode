@@ -7,7 +7,7 @@ let Router = require('./src/router');
 let skympRequest = require('./front/lib/skympRequester');
 
 commander
-  .option('-m, --master [url]', 'SkyMP master server URL', 'http://master.skymp.ru:3000')
+  .option('-m, --master [url]', 'SkyMP master server URL', 'http://185.211.246.144:3000')
   .option('-p, --maxPlayers [n]', 'Players online limitation', '5')
   .version(require('./package.json').version);
 commander.parse(process.argv);
